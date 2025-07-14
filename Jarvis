@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JARVIS AI Assistant</title>
+  <style>
+    body {
+      background-color: #0b0c10;
+      color: #66fcf1;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      padding: 30px;
+    }
+    #output {
+      background: #1f2833;
+      padding: 20px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 10px;
+      border: 1px solid #66fcf1;
+      height: 300px;
+      overflow-y: auto;
+    }
+    .jarvis, .user {
+      margin: 10px 0;
+    }
+    .jarvis {
+      color: #66fcf1;
+    }
+    .user {
+      color: #c5c6c7;
+      text-align: right;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #45a29e;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #66fcf1;
+      color: #0b0c10;
+    }
+  </style>
+</head>
+<body>
+  <h1>JARVIS AI Assistant</h1>
+  <div id="output">
+    <div class="jarvis">JARVIS: Good day, Egypt. System is now online.</div>
+  </div>
+  <button onclick="startListening()">🎙️ Speak</button>
+
+  <script>
+    const OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE"; // ← Replace this!
+
+    const output = document.getElementById("output");
+
+    const synth = window.speechSynthesis;
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = "en-US";
+
+    function speak(text) {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.voice = synth.getVoices().find(v => v.name.includes("Google") || v.name.includes("Microsoft")) || synth.getVoices()[0];
+      synth.speak(utter);
+      addJarvisMessage(text);
+    }
+
+    function addJarvisMessage(text) {
+      const div = document.createElement("div");
+      div.className = "jarvis";
+      div.textContent = "JARVIS: " + text;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function addUserMessage(text) {
+      const div = document.createElement("div");
+      div.className = "user";
+      div.textContent = "You: " + text;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    async function fetchOpenAIResponse(message) {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are JARVIS, a helpful futuristic AI assistant." },
+            { role: "user", content: message }
+          ]
+        })
+      });
+
+      const data = await res.json();
+      const reply = data.choices[0].message.content.trim();
+      speak(reply);
+    }
+
+    function startListening() {
+      recognition.start();
+    }
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      addUserMessage(transcript);
+      fetchOpenAIResponse(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      speak("Sorry, I didn't catch that. Please try again.");
+    };
+
+    // Initial greeting
+    setTimeout(() => {
+      speak("Good day, Egypt. System is now online.");
+    }, 1000);
+  </script>
+</body>
+</html>
